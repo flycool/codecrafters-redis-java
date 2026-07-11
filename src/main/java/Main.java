@@ -1,7 +1,9 @@
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 
 public class Main {
@@ -45,13 +47,32 @@ public class Main {
   public static void handleClient(Socket clientSocket) {
     try {
       InputStream inputStream = clientSocket.getInputStream();
-      byte[] buffer = new byte[1024];
-      int bytesRead;
-      while ((bytesRead = inputStream.read(buffer)) != -1) {
-        clientSocket.getOutputStream().write("+PONG\r\n".getBytes());
+      OutputStream outputStream = clientSocket.getOutputStream();
+      Scanner sc = new Scanner(inputStream);
+
+      while (sc.hasNextLine()) {
+        String nextLine = sc.nextLine();
+        if (nextLine.contains("PING")) {
+          clientSocket.getOutputStream().write("+PONG\r\n".getBytes());
+        }
+        if (nextLine.contains("ECHO")) {
+          String respHeader = sc.nextLine();
+          String respBody = sc.nextLine();
+          String resp = respHeader + "\r\n" + respBody + "\r\n";
+          outputStream.write(resp.getBytes());
+        }
       }
     } catch (IOException e) {
       System.out.println("IOException: " + e.getMessage());
     }
   }
+
+  public static String encodingRespString(String s) {
+    int len = s.length();
+    String resp = "$";
+    resp += len;
+    resp += "\r\n" + s + "\r\n";
+    return resp;
+  }
+
 }
