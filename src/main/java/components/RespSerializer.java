@@ -1,5 +1,6 @@
 package components;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -18,11 +19,14 @@ public class RespSerializer {
         return "hi";
     }
 
+    public Store store = new Store();
+
     static void main() {
         RespSerializer serializer = new RespSerializer();
-        String test = """
-                *2\r\n*3\r\n$3\r\nSET\r\n$5\r\nmango\r\n$9\r\nblueberry\r\n*3\r\n$3\r\nSET\r\n$5\r\nmango\r\n$9\r\nblueberry\r\n
-                """;
+//        String test = """
+//                *2\r\n*3\r\n$3\r\nSET\r\n$5\r\nmango\r\n$9\r\nblueberry\r\n*3\r\n$3\r\nSET\r\n$5\r\nmango\r\n$9\r\nblueberry\r\n
+//                """;
+        String test = "*2\r\n*3\r\n$3\r\nSET\r\n$5\r\nmango\r\n$9\r\nblueberry\r\n*2\r\n$3\r\nGET\r\n$5\r\nmango";
 //        String test = "*1\r\n$4PING";
 //        String test = "*1\r\n$4ECHO$3max";
         List<ArrayList<String>> res = serializer.deserialize(test.getBytes(StandardCharsets.UTF_8));
@@ -86,10 +90,16 @@ public class RespSerializer {
                     String value = c.get(i + 1);
                     System.out.println("key: " + key);
                     System.out.println("value: " + value);
+
+                    String ok = store.set(key, value);
+                    System.out.println("ok: " + ok);
                     break;
                 } else if (command.equals("GET")) {
-                    String v = c.get(i);
-                    System.out.println("v: " + v);
+                    String key = c.get(i);
+                    System.out.println("v: " + key);
+
+                    String value = store.get(key);
+                    System.out.println("value: " + value);
                     break;
                 }
             }
