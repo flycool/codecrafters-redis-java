@@ -28,9 +28,9 @@ public class RespSerializer {
 //                *2\r\n*3\r\n$3\r\nSET\r\n$5\r\nmango\r\n$9\r\nblueberry\r\n*3\r\n$3\r\nSET\r\n$5\r\nmango\r\n$9\r\nblueberry\r\n
 //                """;
 //        String test = "*2\r\n*3\r\n$3\r\nSET\r\n$5\r\nmango\r\n$9\r\nblueberry\r\n*2\r\n$3\r\nGET\r\n$5\r\nmango";
-        String test = "*2\r\n*3\r\n$3\r\nSET\r\n$5\r\nmango\r\n$9\r\nblueberry\r\n$2px\r\n$3100\r\n*2\r\n$3\r\nGET\r\n$5\r\nmango";
-//        String test = "*1\r\n$4PING";
-//        String test = "*1\r\n$4ECHO$3max";
+//        String test = "*2\r\n*3\r\n$3\r\nSET\r\n$5\r\nmango\r\n$9\r\nblueberry\r\n$2\r\npx\r\n$3\r\n100\r\n*2\r\n$3\r\nGET\r\n$5\r\nmango";
+        String test = "*1\r\n$4\r\nPING";
+//        String test = "*1\r\n$4\r\nECHO\r\n$3\r\nmax";
         List<ArrayList<String>> res = serializer.deserialize(test.getBytes(StandardCharsets.UTF_8));
         System.out.println("res:" + res);
 
@@ -43,18 +43,16 @@ public class RespSerializer {
 
     //
     public List<ArrayList<String>> deserialize(byte[] command) {
-        String dataArr = new String(command, StandardCharsets.UTF_8);
+        String commandStr = new String(command, StandardCharsets.UTF_8);
         List<ArrayList<String>> res = new ArrayList<>();
 
-        String commandStr = dataArr.replace("\r\n", "");
-//        System.out.println(commandStr);
         String[] splitCommands = commandStr.split("\\*");
         ArrayList<String> commands = new ArrayList<>();
         for (String c : splitCommands) {
             if (c.isEmpty()) continue;
             commands.add(c);
         }
-//        System.out.println("commands=" + commands);
+        System.out.println("commands=" + commands);
 
         for (int i = 0; i < commands.size(); i++) {
             String[] cc = commands.get(i).split("\\$");
@@ -63,13 +61,8 @@ public class RespSerializer {
 
             ArrayList<String> commandList = new ArrayList<>();
             for (int j = 1; j < cc.length; j++) {
-                if(isStringDigit(cc[j])) {
-                    String s = cc[j].substring(1);
-                    commandList.add(s);
-                    continue;
-                }
-                String c = removeNumFromString(cc[j]);
-                commandList.add(c);
+                String[] scc = cc[j].split("\r\n");
+                commandList.add(scc[1]);
             }
             res.add(commandList);
         }
