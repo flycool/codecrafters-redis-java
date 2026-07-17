@@ -3,6 +3,7 @@ package components;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -18,9 +19,15 @@ public class Store {
         return map.keySet();
     }
 
-    public String set(String key, String v) {
+    // expiry = -1 : no expiry
+    public String set(String key, String v, long expiryMills) {
         try {
-            Value value = new Value(v, LocalDateTime.now(), LocalDateTime.MAX);
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime expire = LocalDateTime.MAX;
+            if (expiryMills != -1) {
+                expire = now.plus(expiryMills, ChronoUnit.MILLIS);
+            }
+            Value value = new Value(v, now, expire);
             map.put(key, value);
             return "+OK\r\n";
         } catch (Exception e) {
@@ -32,6 +39,12 @@ public class Store {
     public String get(String key) {
         try {
             Value value = map.get(key);
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime expire = value.expiry;
+            if(expire.isBefore(now)) {
+                map.remove(key);
+                return "$-1\r\n";
+            }
             return value.value;
         } catch (Exception e) {
             System.out.println(e.getMessage());
