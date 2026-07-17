@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -18,8 +19,6 @@ public class TcpServer {
     private RespSerializer respSerializer;
 
     public void startServer(int port) {
-        respSerializer.printWorking();
-
         ServerSocket serverSocket = null;
         Socket clientSocket = null;
         try {
@@ -35,14 +34,15 @@ public class TcpServer {
                 id++;
                 Socket finalClientSocket = clientSocket;
 
-                InputStream inputStream = clientSocket.getInputStream();
-                OutputStream outputStream = clientSocket.getOutputStream();
+                InputStream inputStream = finalClientSocket.getInputStream();
+                OutputStream outputStream = finalClientSocket.getOutputStream();
                 Client client = new Client(finalClientSocket, inputStream, outputStream, id);
 
                 CompletableFuture.runAsync(() -> {
                     try {
                         handleClient(client);
                     } catch (IOException e) {
+                        System.out.println("error: " + e.getMessage());
                         throw new RuntimeException(e);
                     }
                 });
@@ -65,7 +65,8 @@ public class TcpServer {
         byte[] buffer = new byte[client.socket.getReceiveBufferSize()];
         int bytesRead = client.inputStream.read(buffer);
         if (bytesRead > 0) {
-            List<ArrayList<String>> deserializeRes = respSerializer.deserialize(buffer);
+            String receivedData = new String(buffer, 0, bytesRead, StandardCharsets.UTF_8);
+            List<ArrayList<String>> deserializeRes = respSerializer.deserialize(receivedData);
             respSerializer.handleCommand(client, deserializeRes);
         }
     }

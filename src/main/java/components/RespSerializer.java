@@ -4,46 +4,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 @Component
 public class RespSerializer {
-    public void printWorking() {
-        System.out.println("working-------------");
-    }
+    @Autowired
+    public Store store;
 
-    public String returnString() {
-        return "hi";
-    }
 
-    public Store store = new Store();
-
-    static void main() {
-        RespSerializer serializer = new RespSerializer();
-//        String test = """
-//                *2\r\n*3\r\n$3\r\nSET\r\n$5\r\nmango\r\n$9\r\nblueberry\r\n*3\r\n$3\r\nSET\r\n$5\r\nmango\r\n$9\r\nblueberry\r\n
-//                """;
-//        String test = "*2\r\n*3\r\n$3\r\nSET\r\n$5\r\nmango\r\n$9\r\nblueberry\r\n*2\r\n$3\r\nGET\r\n$5\r\nmango";
-//        String test = "*2\r\n*3\r\n$3\r\nSET\r\n$5\r\nmango\r\n$9\r\nblueberry\r\n$2\r\npx\r\n$3\r\n100\r\n*2\r\n$3\r\nGET\r\n$5\r\nmango";
-        String test = "*1\r\n$4\r\nPING";
-//        String test = "*1\r\n$4\r\nECHO\r\n$3\r\nmax";
-        List<ArrayList<String>> res = serializer.deserialize(test.getBytes(StandardCharsets.UTF_8));
-        System.out.println("res:" + res);
-
-        try {
-            serializer.handleCommand(null, res);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    //
-    public List<ArrayList<String>> deserialize(byte[] command) {
-        String commandStr = new String(command, StandardCharsets.UTF_8);
+    public List<ArrayList<String>> deserialize(String commandStr) {
+//        System.out.println("commandStr: " + commandStr);
         List<ArrayList<String>> res = new ArrayList<>();
 
         String[] splitCommands = commandStr.split("\\*");
@@ -52,11 +23,11 @@ public class RespSerializer {
             if (c.isEmpty()) continue;
             commands.add(c);
         }
-        System.out.println("commands=" + commands);
+//        System.out.println("commands=" + commands);
 
         for (int i = 0; i < commands.size(); i++) {
             String[] cc = commands.get(i).split("\\$");
-//            System.out.println(Arrays.toString(cc));
+
             if (cc.length < 2) continue;
 
             ArrayList<String> commandList = new ArrayList<>();
@@ -76,10 +47,11 @@ public class RespSerializer {
             System.out.println("command: " + command);
             if (command.contains("PING")) {
                 System.out.println("+PONG\r\n");
-                //client.outputStream.write("+PONG\r\n".getBytes());
+                client.outputStream.write("+PONG\r\n".getBytes());
             } else if (command.contains("ECHO")) {
                 String resp = encodingRespString(c.get(1));
                 System.out.println(resp);
+                client.outputStream.write(resp.getBytes());
             } else if (command.equals("SET")) {
                 long expiry = -1;
                 int pxIndex = c.indexOf("px");
@@ -94,12 +66,15 @@ public class RespSerializer {
 
                 String ok = store.set(key, value, expiry);
                 System.out.println("ok: " + ok);
+
+                client.outputStream.write(ok.getBytes());
             } else if (command.equals("GET")) {
                 String key = c.get(1);
                 System.out.println("v: " + key);
 
                 String value = store.get(key);
                 System.out.println("value: " + value);
+                client.outputStream.write(value.getBytes());
             }
 
         }
