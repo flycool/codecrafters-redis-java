@@ -17,12 +17,11 @@ public class TcpServer {
     @Autowired
     private RespSerializer respSerializer;
 
-    public void startServer() {
+    public void startServer(int port) {
         respSerializer.printWorking();
 
         ServerSocket serverSocket = null;
         Socket clientSocket = null;
-        int port = 6379;
         try {
             serverSocket = new ServerSocket(port);
             // Since the tester restarts your program quite often, setting SO_REUSEADDR
