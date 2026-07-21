@@ -1,6 +1,7 @@
 package components.service;
 
 import components.repository.Store;
+import components.server.RedisConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,9 @@ public class CommandHandler {
 
     @Autowired
     public Store store;
+
+    @Autowired
+    public RedisConfig redisConfig;
 
     public String ping(ArrayList<String> command) {
         return "+PONG\n";
@@ -62,7 +66,15 @@ public class CommandHandler {
             int replicationIndex = command.indexOf("replication");
             String res = "";
             if (replicationIndex != -1) {
-                res = respSerializer.encodingRespString("role:master");
+                String role = "role:" + redisConfig.getRole();
+                String masterReplId = "master_replid:" + redisConfig.getMasterReplId();
+                String masterReplOffset = "master_repl_offset:" + redisConfig.getMasterReplOffset();
+
+                String[] info = new String[]{role, masterReplId, masterReplOffset};
+
+                String replicationData = String.join("\r\n", info);
+
+                return respSerializer.encodingRespString(replicationData);
             }
             return res;
         } catch (Exception e) {

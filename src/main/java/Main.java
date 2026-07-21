@@ -15,14 +15,25 @@ public class Main {
         RedisConfig redisConfig = context.getBean(RedisConfig.class);
 
         int port = 6379;
-        for (int i = 0; i < args.length; i++) {
-            if (args[i].equals("--port")) {
-                port = Integer.parseInt(args[++i]);
-                i++;
-            }
-        }
         redisConfig.setPort(port);
         redisConfig.setRole("master");
+        for (int i = 0; i < args.length; i++) {
+            switch (args[i]) {
+                case "--port":
+                    port = Integer.parseInt(args[++i]);
+                    redisConfig.setPort(port);
+                    break;
+                case "--replicaof":
+                    redisConfig.setRole("slave");
+                    String masterHost = args[i].split(" ")[0];
+                    int masterPort = Integer.parseInt(args[i].split(" ")[1]);
+                    redisConfig.setMasterHost(masterHost);
+                    redisConfig.setMasterPort(masterPort);
+                    break;
+
+            }
+        }
+
         app.startServer(port);
     }
 }
